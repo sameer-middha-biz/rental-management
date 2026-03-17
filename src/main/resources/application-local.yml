@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${PMS_DATASOURCE_HOST:localhost}:${PMS_DATASOURCE_PORT:5432}/${PMS_DATASOURCE_DB:pmsdb}
+    username: ${PMS_DATASOURCE_USERNAME:pms}
+    password: ${PMS_DATASOURCE_PASSWORD:pms}
+
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+  data:
+    redis:
+      host: ${PMS_REDIS_HOST:localhost}
+      port: ${PMS_REDIS_PORT:6379}
+
+  mail:
+    host: ${PMS_MAIL_HOST:localhost}
+    port: ${PMS_MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  thymeleaf:
+    cache: false
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.rental.pms: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+springdoc:
+  swagger-ui:
+    enabled: true
+
+pms:
+  encryption:
+    key: ${PMS_ENCRYPTION_KEY:local-dev-key-must-be-32-bytes!!}
+  s3:
+    region: ${PMS_S3_REGION:us-east-1}
+    bucket-name: ${PMS_S3_BUCKET_NAME:pms-local}
+    endpoint: ${PMS_S3_ENDPOINT:http://localhost:4566}
+    access-key: ${PMS_S3_ACCESS_KEY:test}
+    secret-key: ${PMS_S3_SECRET_KEY:test}

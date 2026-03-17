@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    url: ${PMS_DATASOURCE_URL}
+    username: ${PMS_DATASOURCE_USERNAME}
+    password: ${PMS_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${PMS_HIKARI_MAX_POOL_SIZE:30}
+
+  data:
+    redis:
+      host: ${PMS_REDIS_HOST}
+      port: ${PMS_REDIS_PORT}
+      password: ${PMS_REDIS_PASSWORD}
+
+  mail:
+    host: ${PMS_MAIL_HOST}
+    port: ${PMS_MAIL_PORT}
+    username: ${PMS_MAIL_USERNAME}
+    password: ${PMS_MAIL_PASSWORD}
+
+logging:
+  level:
+    root: WARN
+    com.rental.pms: INFO
+    org.hibernate.SQL: WARN
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+pms:
+  encryption:
+    key: ${PMS_ENCRYPTION_KEY}
+  s3:
+    region: ${PMS_S3_REGION}
+    bucket-name: ${PMS_S3_BUCKET_NAME}

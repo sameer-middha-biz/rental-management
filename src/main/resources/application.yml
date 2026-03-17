@@ -1,0 +1,105 @@
+spring:
+  application:
+    name: ${PMS_APP_NAME:holiday-rental-pms}
+
+  datasource:
+    url: ${PMS_DATASOURCE_URL}
+    username: ${PMS_DATASOURCE_USERNAME}
+    password: ${PMS_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${PMS_HIKARI_MAX_POOL_SIZE:20}
+      minimum-idle: ${PMS_HIKARI_MIN_IDLE:5}
+      idle-timeout: ${PMS_HIKARI_IDLE_TIMEOUT:300000}
+      max-lifetime: ${PMS_HIKARI_MAX_LIFETIME:600000}
+      connection-timeout: ${PMS_HIKARI_CONNECTION_TIMEOUT:30000}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+  data:
+    redis:
+      host: ${PMS_REDIS_HOST}
+      port: ${PMS_REDIS_PORT:6379}
+      password: ${PMS_REDIS_PASSWORD:}
+
+  mail:
+    host: ${PMS_MAIL_HOST}
+    port: ${PMS_MAIL_PORT}
+    username: ${PMS_MAIL_USERNAME:}
+    password: ${PMS_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${PMS_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${PMS_MAIL_SMTP_STARTTLS:true}
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: ${PMS_THYMELEAF_CACHE:true}
+
+server:
+  port: ${PMS_SERVER_PORT:8080}
+  servlet:
+    context-path: ${PMS_CONTEXT_PATH:/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: ${PMS_HEALTH_SHOW_DETAILS:never}
+
+logging:
+  level:
+    root: ${PMS_LOG_LEVEL_ROOT:INFO}
+    com.rental.pms: ${PMS_LOG_LEVEL_APP:INFO}
+    org.hibernate.SQL: ${PMS_LOG_LEVEL_HIBERNATE_SQL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${PMS_LOG_LEVEL_HIBERNATE_BINDER:WARN}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${PMS_SWAGGER_ENABLED:false}
+
+pms:
+  encryption:
+    key: ${PMS_ENCRYPTION_KEY}
+  async:
+    core-pool-size: ${PMS_ASYNC_CORE_POOL_SIZE:5}
+    max-pool-size: ${PMS_ASYNC_MAX_POOL_SIZE:20}
+    queue-capacity: ${PMS_ASYNC_QUEUE_CAPACITY:100}
+    thread-name-prefix: ${PMS_ASYNC_THREAD_PREFIX:pms-async-}
+  cache:
+    default-ttl-minutes: ${PMS_CACHE_DEFAULT_TTL_MINUTES:5}
+  s3:
+    region: ${PMS_S3_REGION}
+    bucket-name: ${PMS_S3_BUCKET_NAME}
+    endpoint: ${PMS_S3_ENDPOINT:}
+    access-key: ${PMS_S3_ACCESS_KEY:}
+    secret-key: ${PMS_S3_SECRET_KEY:}

@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16:///pmsdb
+  jpa:
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: true
+
+  data:
+    redis:
+      host: ${PMS_REDIS_HOST:localhost}
+      port: ${PMS_REDIS_PORT:6379}
+
+  mail:
+    host: ${PMS_MAIL_HOST:localhost}
+    port: ${PMS_MAIL_PORT:1025}
+
+logging:
+  level:
+    root: WARN
+    com.rental.pms: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: false
+
+pms:
+  encryption:
+    key: ${PMS_ENCRYPTION_KEY:test-encryption-key-32-bytes!!!!}
+  s3:
+    region: ${PMS_S3_REGION:us-east-1}
+    bucket-name: ${PMS_S3_BUCKET_NAME:pms-test}
+    endpoint: ${PMS_S3_ENDPOINT:http://localhost:4566}
+    access-key: ${PMS_S3_ACCESS_KEY:test}
+    secret-key: ${PMS_S3_SECRET_KEY:test}
+  async:
+    core-pool-size: ${PMS_ASYNC_CORE_POOL_SIZE:2}
+    max-pool-size: ${PMS_ASYNC_MAX_POOL_SIZE:4}
+    queue-capacity: ${PMS_ASYNC_QUEUE_CAPACITY:10}
+    thread-name-prefix: ${PMS_ASYNC_THREAD_PREFIX:pms-test-async-}
+  cache:
+    default-ttl-minutes: ${PMS_CACHE_DEFAULT_TTL_MINUTES:1}

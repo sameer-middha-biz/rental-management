@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pms-postgres
+    environment:
+      POSTGRES_DB: ${PMS_DATASOURCE_DB:-pmsdb}
+      POSTGRES_USER: ${PMS_DATASOURCE_USERNAME:-pms}
+      POSTGRES_PASSWORD: ${PMS_DATASOURCE_PASSWORD:-pms}
+    ports:
+      - "${PMS_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PMS_DATASOURCE_USERNAME:-pms} -d ${PMS_DATASOURCE_DB:-pmsdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: pms-redis
+    ports:
+      - "${PMS_REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: pms-localstack
+    environment:
+      SERVICES: s3
+      DEFAULT_REGION: ${PMS_S3_REGION:-us-east-1}
+    ports:
+      - "${PMS_LOCALSTACK_PORT:-4566}:4566"
+    volumes:
+      - localstack_data:/var/lib/localstack
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: pms-mailhog
+    ports:
+      - "${PMS_MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${PMS_MAILHOG_UI_PORT:-8025}:8025"
+
+volumes:
+  postgres_data:
+  redis_data:
+  localstack_data:
