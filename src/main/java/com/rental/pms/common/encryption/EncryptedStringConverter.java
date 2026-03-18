@@ -21,7 +21,7 @@ import java.util.Base64;
  * <p>
  * Applied to fields like OAuth tokens, 2FA secrets, and webhook secrets.
  */
-@Converter
+@Converter(autoApply = false)
 @Component
 @Slf4j
 public class EncryptedStringConverter implements AttributeConverter<String, String> {

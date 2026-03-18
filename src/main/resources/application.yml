@@ -90,6 +90,17 @@ springdoc:
 pms:
   encryption:
     key: ${PMS_ENCRYPTION_KEY}
+  jwt:
+    private-key-location: ${PMS_JWT_PRIVATE_KEY_LOCATION:classpath:keys/private.pem}
+    public-key-location: ${PMS_JWT_PUBLIC_KEY_LOCATION:classpath:keys/public.pem}
+    access-token-expiry: ${PMS_JWT_ACCESS_TOKEN_EXPIRY:15m}
+    refresh-token-expiry: ${PMS_JWT_REFRESH_TOKEN_EXPIRY:7d}
+  cors:
+    allowed-origins: ${PMS_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  rate-limit:
+    enabled: ${PMS_RATE_LIMIT_ENABLED:true}
+    tenant-requests-per-minute: ${PMS_RATE_LIMIT_TENANT_RPM:100}
+    anonymous-requests-per-minute: ${PMS_RATE_LIMIT_ANONYMOUS_RPM:20}
   async:
     core-pool-size: ${PMS_ASYNC_CORE_POOL_SIZE:5}
     max-pool-size: ${PMS_ASYNC_MAX_POOL_SIZE:20}

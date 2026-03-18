@@ -207,7 +207,16 @@ SUPER_ADMIN > AGENCY_ADMIN > PROPERTY_MANAGER > OWNER > HOUSEKEEPER > GUEST
 
 ---
 
-## 12. OpenAPI / Swagger Documentation
+## 12. No Hardcoding or Magic Values
+
+* **No hardcoded configuration values** in Java source code. All environment-specific or tuneable values (URLs, ports, credentials, pool sizes, timeouts, feature toggles) must be externalised to `application.yml` / `application-{profile}.yml` and injected via `@Value` or `@ConfigurationProperties`.
+* **No magic numbers or strings.** Numeric literals and string literals with business meaning must be extracted to named constants in `Constants.java`, enums, or configuration properties. Inline literals are only acceptable for truly universal values (e.g., `0`, `1`, `""`, `null` checks).
+* **No default values in code that mask missing configuration.** If a configuration property is required for the application to function correctly, it must **not** have a fallback default in `@Value` annotations — the application should fail fast on startup if the value is missing. Defaults are only acceptable for optional/tuneable properties where a sensible fallback exists (e.g., page sizes, thread pool sizes).
+* **Test profiles** may use inline values only inside `application-test.yml`, never in test Java source code.
+
+---
+
+## 13. OpenAPI / Swagger Documentation
 
 * **Controllers:** Annotate with `@Tag(name = "Bookings", description = "Booking management endpoints")`.
 * **Endpoints:** Annotate with `@Operation(summary = "Create a new booking")`.

@@ -46,6 +46,11 @@ springdoc:
 pms:
   encryption:
     key: ${PMS_ENCRYPTION_KEY:local-dev-key-must-be-32-bytes!!}
+  jwt:
+    private-key-location: ${PMS_JWT_PRIVATE_KEY_LOCATION:classpath:keys/private.pem}
+    public-key-location: ${PMS_JWT_PUBLIC_KEY_LOCATION:classpath:keys/public.pem}
+  cors:
+    allowed-origins: ${PMS_CORS_ALLOWED_ORIGINS:http://localhost:3000}
   s3:
     region: ${PMS_S3_REGION:us-east-1}
     bucket-name: ${PMS_S3_BUCKET_NAME:pms-local}
