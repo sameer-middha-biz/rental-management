@@ -114,3 +114,7 @@ pms:
     endpoint: ${PMS_S3_ENDPOINT:}
     access-key: ${PMS_S3_ACCESS_KEY:}
     secret-key: ${PMS_S3_SECRET_KEY:}
+  invitation:
+    expiry-days: ${PMS_INVITATION_EXPIRY_DAYS:7}
+  password-reset:
+    expiry-hours: ${PMS_PASSWORD_RESET_EXPIRY_HOURS:1}

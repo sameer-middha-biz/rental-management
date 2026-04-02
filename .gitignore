@@ -29,6 +29,7 @@ Thumbs.db
 *.pem
 keys/
 src/main/resources/keys/
+!src/test/resources/keys/
 
 # === Spring Boot ===
 *.log

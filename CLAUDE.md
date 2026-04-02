@@ -79,11 +79,15 @@ Each phase has a detailed implementation plan in docs/tasks/:
 - docs/tasks/08-cross-cutting-features-and-ancillary-modules.md
 
 ## Phase Status
-- [ ] Phase 1: Project Setup & Shared Kernel
-- [ ] Phase 2: Security & Auth Foundation
-- [ ] Phase 3: Tenant & User Modules
+- [x] Phase 1: Project Setup & Shared Kernel
+- [x] Phase 2: Security & Auth Foundation
+- [x] Phase 3: Tenant & User Modules
 - [ ] Phase 4: Property & Subscription Modules
 - [ ] Phase 5: Guest & Booking Modules
 - [ ] Phase 6: Payment & Channel Sync
 - [ ] Phase 7: Housekeeping & Maintenance
 - [ ] Phase 8: Cross-Cutting Features
+
+## Deployment Documentation
+- Full guide: docs/DEPLOYMENT.md
+- **After completing each phase:** review docs/DEPLOYMENT.md and update the Phase Update Log table. Add any new environment variables introduced by that phase (new integrations, secrets, feature flags). Mark the phase row as Done.
