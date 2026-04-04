@@ -101,22 +101,20 @@ public class AuthService {
             throw new TokenInvalidException("Refresh");
         }
 
-        // Look up stored token
+        // Atomically revoke the old token — prevents TOCTOU race condition
         String tokenHash = hashToken(request.refreshToken());
-        RefreshToken storedToken = refreshTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new TokenInvalidException("Refresh"));
-
-        if (storedToken.isRevoked()) {
+        int revokedCount = refreshTokenRepository.revokeByTokenHashIfNotRevoked(tokenHash);
+        if (revokedCount == 0) {
+            // Token was already revoked, not found, or expired — reject
             throw new TokenInvalidException("Refresh");
         }
 
+        // Check expiry from the DB record
+        RefreshToken storedToken = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new TokenInvalidException("Refresh"));
         if (storedToken.getExpiresAt().isBefore(Instant.now())) {
             throw new TokenExpiredException("Refresh");
         }
-
-        // Revoke old token
-        storedToken.setRevoked(true);
-        refreshTokenRepository.save(storedToken);
 
         // Load user and check status
         UUID userId = jwtTokenProvider.getUserId(claims);

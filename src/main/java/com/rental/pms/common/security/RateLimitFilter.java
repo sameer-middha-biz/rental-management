@@ -1,5 +1,7 @@
 package com.rental.pms.common.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rental.pms.common.dto.ErrorResponse;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
@@ -17,11 +19,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
+import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -38,21 +42,24 @@ import java.util.function.Supplier;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ProxyManager<String> proxyManager;
+    private final ObjectMapper objectMapper;
     private final int tenantRequestsPerMinute;
     private final int anonymousRequestsPerMinute;
 
-    // Fallback in-memory buckets when Redis ProxyManager is unavailable (tests, Redis outage).
-    // Note: this map grows unboundedly — acceptable for fallback-only scenarios.
-    // In production, Redis should always be available; if it goes down temporarily,
-    // the map will be bounded by unique IPs/tenants during the outage window.
-    private final Map<String, Bucket> localBuckets = new ConcurrentHashMap<>();
+    // Bounded fallback cache when Redis ProxyManager is unavailable (tests, Redis outage).
+    private final Cache<String, Bucket> localBuckets = Caffeine.newBuilder()
+            .maximumSize(10_000)
+            .expireAfterAccess(Duration.ofMinutes(5))
+            .build();
 
     public RateLimitFilter(
             @Autowired(required = false) ProxyManager<String> proxyManager,
+            ObjectMapper objectMapper,
             @Value("${pms.rate-limit.tenant-requests-per-minute:100}") int tenantRequestsPerMinute,
             @Value("${pms.rate-limit.anonymous-requests-per-minute:20}") int anonymousRequestsPerMinute
     ) {
         this.proxyManager = proxyManager;
+        this.objectMapper = objectMapper;
         this.tenantRequestsPerMinute = tenantRequestsPerMinute;
         this.anonymousRequestsPerMinute = anonymousRequestsPerMinute;
     }
@@ -86,9 +93,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setStatus(429);
             response.setHeader("Retry-After", String.valueOf(waitSeconds));
             response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"status\":429,\"error\":\"Too Many Requests\",\"message\":\"Rate limit exceeded. Try again in "
-                            + waitSeconds + " seconds.\",\"errorCode\":\"RATE_LIMIT.EXCEEDED\"}");
+            ErrorResponse errorResponse = new ErrorResponse(
+                    Instant.now(), 429, "Too Many Requests",
+                    "Rate limit exceeded. Try again in " + waitSeconds + " seconds.",
+                    "RATE_LIMIT.EXCEEDED", request.getRequestURI(), null);
+            objectMapper.writeValue(response.getWriter(), errorResponse);
             log.warn("Rate limit exceeded for key: {}", bucketKey);
         }
     }
@@ -98,8 +107,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             Supplier<BucketConfiguration> configSupplier = () -> buildConfig(requestsPerMinute);
             return proxyManager.builder().build(key, configSupplier);
         }
-        // Fallback: in-memory bucket (for unit tests or when Redis is unavailable)
-        return localBuckets.computeIfAbsent(key, k -> Bucket.builder()
+        // Fallback: bounded in-memory bucket (for unit tests or when Redis is unavailable)
+        return localBuckets.get(key, k -> Bucket.builder()
                 .addLimit(Bandwidth.simple(requestsPerMinute, Duration.ofMinutes(1)))
                 .build());
     }
@@ -111,10 +120,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
+        // Use remoteAddr only — X-Forwarded-For is client-controlled and can be spoofed.
+        // The reverse proxy (Traefik/Caddy in Coolify) should set remoteAddr correctly.
+        // If behind a trusted proxy, configure Spring's ForwardedHeaderFilter instead.
         return request.getRemoteAddr();
     }
 }

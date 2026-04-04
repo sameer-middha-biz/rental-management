@@ -1,5 +1,7 @@
 package com.rental.pms.common.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rental.pms.common.dto.ErrorResponse;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -35,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -79,20 +83,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (ExpiredJwtException ex) {
             log.debug("Expired JWT token for request: {}", request.getRequestURI());
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Token has expired\",\"errorCode\":\"AUTH.TOKEN.EXPIRED\"}");
+            writeErrorResponse(response, 401, "Unauthorized", "Token has expired", "AUTH.TOKEN.EXPIRED",
+                    request.getRequestURI());
             return;
         } catch (JwtException ex) {
             log.debug("Invalid JWT token for request: {}", request.getRequestURI());
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Invalid token\",\"errorCode\":\"AUTH.TOKEN.INVALID\"}");
+            writeErrorResponse(response, 401, "Unauthorized", "Invalid token", "AUTH.TOKEN.INVALID",
+                    request.getRequestURI());
             return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void writeErrorResponse(HttpServletResponse response, int status, String error,
+                                    String message, String errorCode, String path) throws IOException {
+        ErrorResponse errorResponse = new ErrorResponse(
+                Instant.now(), status, error, message, errorCode, path, null);
+        response.setStatus(status);
+        response.setContentType("application/json");
+        objectMapper.writeValue(response.getWriter(), errorResponse);
     }
 }

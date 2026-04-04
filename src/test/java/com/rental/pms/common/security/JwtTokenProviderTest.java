@@ -54,6 +54,7 @@ class JwtTokenProviderTest {
         Claims claims = tokenProvider.validateAndExtractClaims(token);
         assertThat(claims.getSubject()).isEqualTo(userId.toString());
         assertThat(claims.get("tenantId", String.class)).isEqualTo(tenantId.toString());
+        assertThat(claims.getId()).isNotBlank(); // jti claim
         assertThat(tokenProvider.getRoles(claims)).containsExactly("AGENCY_ADMIN");
         assertThat(tokenProvider.getPermissions(claims)).containsExactly("PROPERTY_CREATE", "BOOKING_VIEW");
     }
@@ -82,6 +83,7 @@ class JwtTokenProviderTest {
 
         assertThat(claims.getSubject()).isEqualTo(userId.toString());
         assertThat(claims.get("type", String.class)).isEqualTo("refresh");
+        assertThat(claims.getId()).isNotBlank(); // jti claim
     }
 
     @Test
@@ -133,6 +135,27 @@ class JwtTokenProviderTest {
     void validateAndExtractClaims_WhenMalformedToken_ShouldThrowJwtException() {
         assertThatThrownBy(() -> tokenProvider.validateAndExtractClaims("not.a.valid.token"))
                 .isInstanceOf(JwtException.class);
+    }
+
+    @Test
+    void getUserId_WithInvalidUUID_ShouldThrowJwtException() {
+        Claims claims = new io.jsonwebtoken.impl.DefaultClaims(java.util.Map.of("sub", "not-a-uuid"));
+
+        assertThatThrownBy(() -> tokenProvider.getUserId(claims))
+                .isInstanceOf(JwtException.class)
+                .hasMessageContaining("Invalid userId");
+    }
+
+    @Test
+    void getTenantId_WithInvalidUUID_ShouldThrowJwtException() {
+        Claims claims = new io.jsonwebtoken.impl.DefaultClaims(java.util.Map.of(
+                "sub", UUID.randomUUID().toString(),
+                "tenantId", "not-a-uuid"
+        ));
+
+        assertThatThrownBy(() -> tokenProvider.getTenantId(claims))
+                .isInstanceOf(JwtException.class)
+                .hasMessageContaining("Invalid tenantId");
     }
 
     @Test

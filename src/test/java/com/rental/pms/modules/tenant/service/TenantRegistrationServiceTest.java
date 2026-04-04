@@ -2,7 +2,6 @@ package com.rental.pms.modules.tenant.service;
 
 import com.rental.pms.common.audit.AuditEventPublisher;
 import com.rental.pms.common.event.DomainEventPublisher;
-import com.rental.pms.common.exception.ConflictException;
 import com.rental.pms.common.security.JwtTokenProvider;
 import com.rental.pms.modules.subscription.service.SubscriptionService;
 import com.rental.pms.modules.tenant.dto.TenantRegistrationRequest;
@@ -92,7 +91,6 @@ class TenantRegistrationServiceTest {
     @Test
     void register_WithValidRequest_ShouldCreateTenantAndUser() {
         // Arrange
-        when(userRepository.existsByEmail(validRequest.email())).thenReturn(false);
         when(tenantRepository.existsBySlug(anyString())).thenReturn(false);
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> {
             Tenant t = invocation.getArgument(0);
@@ -130,19 +128,8 @@ class TenantRegistrationServiceTest {
     }
 
     @Test
-    void register_WithDuplicateEmail_ShouldThrowConflictException() {
-        // Arrange
-        when(userRepository.existsByEmail(validRequest.email())).thenReturn(true);
-
-        // Act & Assert
-        assertThatThrownBy(() -> tenantRegistrationService.register(validRequest))
-                .isInstanceOf(ConflictException.class);
-    }
-
-    @Test
     void register_ShouldPublishTenantRegisteredEvent() {
         // Arrange
-        when(userRepository.existsByEmail(validRequest.email())).thenReturn(false);
         when(tenantRepository.existsBySlug(anyString())).thenReturn(false);
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> {
             Tenant t = invocation.getArgument(0);
@@ -180,7 +167,6 @@ class TenantRegistrationServiceTest {
     void register_ShouldCallCreateStarterSubscription() {
         // Arrange
         UUID tenantId = UUID.randomUUID();
-        when(userRepository.existsByEmail(validRequest.email())).thenReturn(false);
         when(tenantRepository.existsBySlug(anyString())).thenReturn(false);
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> {
             Tenant t = invocation.getArgument(0);

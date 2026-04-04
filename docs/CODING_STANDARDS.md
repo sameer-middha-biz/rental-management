@@ -146,6 +146,7 @@ The `GlobalExceptionHandler` maps each exception class to its HTTP status and er
   - `INFO` -- Business events (booking created, payment received, user registered)
   - `DEBUG` -- Internal flow tracing (query parameters, cache hit/miss)
 * **PII protection:** Never log guest email, phone, or payment details at `INFO` or above. Mask sensitive fields in `DEBUG` logs (e.g., `email=j***@example.com`).
+* **Security token protection:** Never log raw tokens (reset tokens, invitation tokens, refresh tokens) at any log level. Log only the user/entity ID to allow tracing. If a token must appear in a log for debugging purposes, use `DEBUG` level and log only a hash prefix (first 8 chars of the hash), never the token itself.
 
 ---
 
@@ -179,6 +180,18 @@ SUPER_ADMIN > AGENCY_ADMIN > PROPERTY_MANAGER > OWNER > HOUSEKEEPER > GUEST
   ```
 * **Custom validators** for domain rules (e.g., `@ValidDateRange` ensuring `checkOut > checkIn`).
 * **`@Valid`** on all `@RequestBody` parameters in controller methods.
+* **Enum-backed string fields must be validated in the DTO** — never rely on `Enum.valueOf()` in the service to catch invalid values. An unvalidated string passed to `valueOf()` throws `IllegalArgumentException` which the `GlobalExceptionHandler` maps as a 500, not a 400. Use `@Pattern` with the allowed values or a custom `@ValidEnum` annotation:
+  ```java
+  // Wrong — validation happens too late, returns 500
+  public record UpdateStatusRequest(@NotBlank String status) {}
+  // Then in service: UserStatus.valueOf(request.status())  ← throws 500 on bad input
+
+  // Correct — validated at controller boundary, returns 400
+  public record UpdateStatusRequest(
+      @Pattern(regexp = "ACTIVE|DISABLED|INVITED", message = "Invalid status value")
+      @NotBlank String status
+  ) {}
+  ```
 * **Validation errors** return HTTP 400 with `ErrorResponse` including a `fieldErrors` list:
   ```json
   {

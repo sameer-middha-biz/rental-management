@@ -98,7 +98,7 @@ class InvitationServiceTest {
 
         when(currentUser.getTenantId()).thenReturn(tenantId);
         when(currentUser.getUserId()).thenReturn(currentUserId);
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByEmailAndTenantId(request.email(), tenantId)).thenReturn(false);
         when(invitationRepository.findByEmailAndTenantIdAndStatus(
                 request.email(), tenantId, InvitationStatus.PENDING))
                 .thenReturn(Optional.empty());
@@ -128,7 +128,7 @@ class InvitationServiceTest {
         InviteUserRequest request = new InviteUserRequest("existing@test.com", "PROPERTY_MANAGER");
 
         when(currentUser.getTenantId()).thenReturn(tenantId);
-        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+        when(userRepository.existsByEmailAndTenantId(request.email(), tenantId)).thenReturn(true);
 
         // Act & Assert
         assertThatThrownBy(() -> invitationService.invite(request))
@@ -146,7 +146,7 @@ class InvitationServiceTest {
                 .build();
 
         when(currentUser.getTenantId()).thenReturn(tenantId);
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByEmailAndTenantId(request.email(), tenantId)).thenReturn(false);
         when(invitationRepository.findByEmailAndTenantIdAndStatus(
                 request.email(), tenantId, InvitationStatus.PENDING))
                 .thenReturn(Optional.of(existingInvitation));
@@ -174,7 +174,7 @@ class InvitationServiceTest {
         invitation.setTenantId(tenantId);
 
         when(invitationRepository.findByToken(token)).thenReturn(Optional.of(invitation));
-        when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
+        when(userRepository.existsByEmailAndTenantId("new@test.com", tenantId)).thenReturn(false);
         when(roleRepository.findById(propertyManagerRole.getId()))
                 .thenReturn(Optional.of(propertyManagerRole));
         when(passwordEncoder.encode(request.password())).thenReturn("$2a$12$encoded");

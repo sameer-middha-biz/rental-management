@@ -1,5 +1,7 @@
 package com.rental.pms.common.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -10,7 +12,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -37,7 +38,6 @@ class JwtAuthenticationFilterTest {
     @Mock
     private FilterChain filterChain;
 
-    @InjectMocks
     private JwtAuthenticationFilter filter;
 
     private MockHttpServletRequest request;
@@ -45,6 +45,9 @@ class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        filter = new JwtAuthenticationFilter(jwtTokenProvider, objectMapper);
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         SecurityContextHolder.clearContext();

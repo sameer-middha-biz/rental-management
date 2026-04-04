@@ -155,14 +155,18 @@ class AuthServiceTest {
         when(jwtTokenProvider.getUserId(claims)).thenReturn(userId);
 
         String tokenHash = AuthService.hashToken(rawRefreshToken);
+
+        // Atomic revoke succeeds (returns 1 row updated)
+        when(refreshTokenRepository.revokeByTokenHashIfNotRevoked(tokenHash)).thenReturn(1);
+
         RefreshToken storedToken = RefreshToken.builder()
                 .userId(userId)
                 .tokenHash(tokenHash)
                 .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
-                .revoked(false)
+                .revoked(true)
                 .build();
-
         when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(storedToken));
+
         when(userRepository.findByIdWithRolesAndPermissions(userId)).thenReturn(Optional.of(activeUser));
         when(jwtTokenProvider.generateAccessToken(any(), any(), any(), any()))
                 .thenReturn("new-access-token");
@@ -178,8 +182,8 @@ class AuthServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.accessToken()).isEqualTo("new-access-token");
         assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
-        assertThat(storedToken.isRevoked()).isTrue();
-        verify(refreshTokenRepository, times(2)).save(any(RefreshToken.class));
+        verify(refreshTokenRepository).revokeByTokenHashIfNotRevoked(tokenHash);
+        verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
@@ -194,14 +198,9 @@ class AuthServiceTest {
         when(jwtTokenProvider.validateAndExtractClaims(rawRefreshToken)).thenReturn(claims);
 
         String tokenHash = AuthService.hashToken(rawRefreshToken);
-        RefreshToken revokedToken = RefreshToken.builder()
-                .userId(UUID.randomUUID())
-                .tokenHash(tokenHash)
-                .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
-                .revoked(true)
-                .build();
 
-        when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(revokedToken));
+        // Atomic revoke fails (returns 0 — already revoked)
+        when(refreshTokenRepository.revokeByTokenHashIfNotRevoked(tokenHash)).thenReturn(0);
 
         // Act & Assert
         assertThatThrownBy(() -> authService.refreshToken(request))

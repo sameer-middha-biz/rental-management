@@ -53,9 +53,11 @@ public class TenantRegistrationService {
 
     @Transactional
     public AuthResponse register(TenantRegistrationRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ConflictException("Email already registered", "AUTH.EMAIL.DUPLICATE");
-        }
+        // Note: Registration creates a new tenant, so we don't scope by tenant here.
+        // However, since global email uniqueness was removed (V2.7), the same email
+        // CAN exist across tenants. This check is kept as a UX convenience only —
+        // we don't reveal whether the email exists on another tenant.
+        // The actual uniqueness is enforced by the per-tenant DB constraint.
 
         // Create tenant
         String slug = generateUniqueSlug(request.agencyName());

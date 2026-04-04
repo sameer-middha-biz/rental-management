@@ -43,8 +43,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -68,8 +70,8 @@ public class InvitationService {
     public InvitationResponse invite(InviteUserRequest request) {
         UUID tenantId = currentUser.getTenantId();
 
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ConflictException("Email already registered", "USER.EMAIL.DUPLICATE");
+        if (userRepository.existsByEmailAndTenantId(request.email(), tenantId)) {
+            throw new ConflictException("Email already registered in this tenant", "USER.EMAIL.DUPLICATE");
         }
 
         invitationRepository.findByEmailAndTenantIdAndStatus(
@@ -117,11 +119,11 @@ public class InvitationService {
             throw new InvitationExpiredException();
         }
 
-        if (userRepository.existsByEmail(invitation.getEmail())) {
-            throw new ConflictException("Email already registered", "USER.EMAIL.DUPLICATE");
-        }
-
         UUID tenantId = invitation.getTenantId();
+
+        if (userRepository.existsByEmailAndTenantId(invitation.getEmail(), tenantId)) {
+            throw new ConflictException("Email already registered in this tenant", "USER.EMAIL.DUPLICATE");
+        }
         TenantContext.setTenantId(tenantId);
         try {
             Role role = roleRepository.findById(invitation.getRoleId())
@@ -169,11 +171,14 @@ public class InvitationService {
 
     public PageResponse<InvitationResponse> getInvitations(Pageable pageable) {
         UUID tenantId = currentUser.getTenantId();
+
+        // Pre-load all roles into a map to avoid N+1 queries (only ~6 system roles exist)
+        Map<UUID, String> roleNameMap = roleRepository.findAll().stream()
+                .collect(java.util.stream.Collectors.toMap(Role::getId, Role::getName));
+
         Page<InvitationResponse> page = invitationRepository.findAllByTenantId(tenantId, pageable)
                 .map(inv -> {
-                    String roleName = roleRepository.findById(inv.getRoleId())
-                            .map(Role::getName)
-                            .orElse("UNKNOWN");
+                    String roleName = roleNameMap.getOrDefault(inv.getRoleId(), "UNKNOWN");
                     return toResponse(inv, roleName);
                 });
         return PageResponse.from(page);

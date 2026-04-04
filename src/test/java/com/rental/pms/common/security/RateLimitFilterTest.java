@@ -1,5 +1,7 @@
 package com.rental.pms.common.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.AfterEach;
@@ -34,8 +36,10 @@ class RateLimitFilterTest {
 
     @BeforeEach
     void setUp() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         // Use in-memory buckets (null ProxyManager) with low limits for testing
-        rateLimitFilter = new RateLimitFilter(null, 5, 3);
+        rateLimitFilter = new RateLimitFilter(null, objectMapper, 5, 3);
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         SecurityContextHolder.clearContext();
@@ -100,14 +104,25 @@ class RateLimitFilterTest {
     }
 
     @Test
-    void doFilterInternal_WhenXForwardedFor_ShouldUseFirstIp() throws ServletException, IOException {
-        request.addHeader("X-Forwarded-For", "203.0.113.50, 70.41.3.18, 150.172.238.178");
+    void doFilterInternal_ShouldUseRemoteAddrNotXForwardedFor() throws ServletException, IOException {
+        // X-Forwarded-For should be ignored to prevent spoofing (Issue #4)
+        request.setRemoteAddr("192.168.1.100");
+        request.addHeader("X-Forwarded-For", "203.0.113.50, 70.41.3.18");
 
-        // This should use the first IP (203.0.113.50) for rate limiting
         rateLimitFilter.doFilterInternal(request, response, filterChain);
 
         assertThat(response.getStatus()).isEqualTo(200);
         verify(filterChain).doFilter(request, response);
+
+        // Exhaust limit using the same remoteAddr, proving it uses remoteAddr not XFF
+        for (int i = 0; i < 2; i++) {
+            MockHttpServletResponse resp = new MockHttpServletResponse();
+            rateLimitFilter.doFilterInternal(request, resp, filterChain);
+        }
+
+        MockHttpServletResponse limitedResponse = new MockHttpServletResponse();
+        rateLimitFilter.doFilterInternal(request, limitedResponse, filterChain);
+        assertThat(limitedResponse.getStatus()).isEqualTo(429);
     }
 
     @Test

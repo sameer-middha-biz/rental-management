@@ -2,14 +2,17 @@ package com.rental.pms.common.encryption;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Base64;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class EncryptedStringConverterTest {
 
-    private static final String VALID_32_BYTE_KEY = "test-encryption-key-32-bytes!!!!";
+    // Base64-encoded 32-byte key (decodes to "test-encryption-key-32-bytes!!!!")
+    private static final String VALID_BASE64_KEY = "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyEhISE=";
 
-    private final EncryptedStringConverter converter = new EncryptedStringConverter(VALID_32_BYTE_KEY);
+    private final EncryptedStringConverter converter = new EncryptedStringConverter(VALID_BASE64_KEY);
 
     @Test
     void roundTrip_ShouldEncryptThenDecryptToOriginalPlaintext() {
@@ -57,8 +60,17 @@ class EncryptedStringConverterTest {
     }
 
     @Test
-    void constructor_WithInvalidKeyLength_ShouldThrowIllegalArgument() {
-        assertThatThrownBy(() -> new EncryptedStringConverter("too-short-key"))
+    void constructor_WithInvalidBase64_ShouldThrowIllegalArgument() {
+        assertThatThrownBy(() -> new EncryptedStringConverter("not-valid-base64!!!"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Base64");
+    }
+
+    @Test
+    void constructor_WithWrongKeyLength_ShouldThrowIllegalArgument() {
+        // Valid Base64 but decodes to only 16 bytes (not 32)
+        String shortKey = Base64.getEncoder().encodeToString(new byte[16]);
+        assertThatThrownBy(() -> new EncryptedStringConverter(shortKey))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("32 bytes");
     }

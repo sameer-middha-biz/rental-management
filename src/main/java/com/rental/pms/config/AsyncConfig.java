@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Async thread pool configuration with TenantAwareTaskDecorator
@@ -39,6 +40,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setQueueCapacity(queueCapacity);
         executor.setThreadNamePrefix(threadNamePrefix);
         executor.setTaskDecorator(new TenantAwareTaskDecorator());
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
     }

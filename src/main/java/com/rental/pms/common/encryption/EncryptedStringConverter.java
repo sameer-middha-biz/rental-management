@@ -34,10 +34,16 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
     private final SecureRandom secureRandom;
 
     public EncryptedStringConverter(@Value("${pms.encryption.key}") String encryptionKey) {
-        byte[] keyBytes = encryptionKey.getBytes(StandardCharsets.UTF_8);
+        byte[] keyBytes;
+        try {
+            keyBytes = Base64.getDecoder().decode(encryptionKey);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Encryption key must be a valid Base64-encoded string that decodes to 32 bytes for AES-256", e);
+        }
         if (keyBytes.length != 32) {
             throw new IllegalArgumentException(
-                    "Encryption key must be exactly 32 bytes for AES-256. Received: " + keyBytes.length);
+                    "Encryption key must decode to exactly 32 bytes for AES-256. Received: " + keyBytes.length);
         }
         this.secretKey = new SecretKeySpec(keyBytes, "AES");
         this.secureRandom = new SecureRandom();

@@ -58,6 +58,7 @@ public class JwtTokenProvider {
     public String generateAccessToken(UUID userId, UUID tenantId, List<String> roles, List<String> permissions) {
         Instant now = Instant.now();
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(userId.toString())
                 .claim("tenantId", tenantId != null ? tenantId.toString() : null)
                 .claim("roles", roles)
@@ -74,6 +75,7 @@ public class JwtTokenProvider {
     public String generateRefreshToken(UUID userId) {
         Instant now = Instant.now();
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(userId.toString())
                 .claim("type", "refresh")
                 .issuedAt(Date.from(now))
@@ -100,7 +102,11 @@ public class JwtTokenProvider {
      * Extracts the subject (userId) from a valid token.
      */
     public UUID getUserId(Claims claims) {
-        return UUID.fromString(claims.getSubject());
+        try {
+            return UUID.fromString(claims.getSubject());
+        } catch (IllegalArgumentException e) {
+            throw new io.jsonwebtoken.JwtException("Invalid userId in token", e);
+        }
     }
 
     /**
@@ -108,7 +114,14 @@ public class JwtTokenProvider {
      */
     public UUID getTenantId(Claims claims) {
         String tenantId = claims.get("tenantId", String.class);
-        return tenantId != null ? UUID.fromString(tenantId) : null;
+        if (tenantId == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(tenantId);
+        } catch (IllegalArgumentException e) {
+            throw new io.jsonwebtoken.JwtException("Invalid tenantId in token", e);
+        }
     }
 
     /**

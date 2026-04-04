@@ -169,6 +169,12 @@
             <version>${openpdf.version}</version>
         </dependency>
 
+        <!-- Caffeine (bounded in-memory cache, used as rate-limit fallback) -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
         <!-- Rate Limiting -->
         <dependency>
             <groupId>com.bucket4j</groupId>
