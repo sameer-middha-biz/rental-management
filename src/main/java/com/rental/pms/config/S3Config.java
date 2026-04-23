@@ -4,10 +4,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
 
@@ -44,13 +46,35 @@ public class S3Config {
                     .forcePathStyle(true);
         }
 
-        if (accessKey != null && !accessKey.isBlank()
-                && secretKey != null && !secretKey.isBlank()) {
-            builder.credentialsProvider(
-                    StaticCredentialsProvider.create(
-                            AwsBasicCredentials.create(accessKey, secretKey)));
-        }
+        credentialsProvider().ifPresent(builder::credentialsProvider);
 
         return builder.build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner() {
+        S3Presigner.Builder builder = S3Presigner.builder()
+                .region(Region.of(region));
+
+        if (endpoint != null && !endpoint.isBlank()) {
+            builder.endpointOverride(URI.create(endpoint));
+            // LocalStack requires path-style addressing
+            builder.serviceConfiguration(software.amazon.awssdk.services.s3.S3Configuration.builder()
+                    .pathStyleAccessEnabled(true)
+                    .build());
+        }
+
+        credentialsProvider().ifPresent(builder::credentialsProvider);
+
+        return builder.build();
+    }
+
+    private java.util.Optional<AwsCredentialsProvider> credentialsProvider() {
+        if (accessKey != null && !accessKey.isBlank()
+                && secretKey != null && !secretKey.isBlank()) {
+            return java.util.Optional.of(StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(accessKey, secretKey)));
+        }
+        return java.util.Optional.empty();
     }
 }

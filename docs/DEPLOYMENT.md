@@ -1,7 +1,7 @@
 # Deployment Guide
 
 > **Living document** — updated after each implementation phase.
-> Last updated: Phase 3 (Tenant & User Modules).
+> Last updated: Phase 4 (Property & Subscription Modules).
 
 This guide covers deploying the Holiday Rental Management Platform in two environments:
 - **Primary (MVP):** Coolify on Hostinger VPS (self-hosted)
@@ -73,6 +73,20 @@ All variables follow the `PMS_*` prefix convention. Variables marked **Required*
 | `PMS_PASSWORD_RESET_EXPIRY_HOURS` | Optional | `1` | Number of hours before a password reset token expires. |
 
 > **Note:** Phase 3 introduced no new required infrastructure variables. The invitation and password reset expiry values have sensible defaults and are optional to override.
+
+### Phase 4 — Property & Subscription Modules
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `PMS_S3_BUCKET_NAME` | Required | — | S3 bucket for property photos. Must already exist and be private. |
+| `PMS_S3_REGION` | Required | — | AWS region (or matching region for Cloudflare R2 / Backblaze B2). |
+| `PMS_S3_ACCESS_KEY` | Required | — | S3 access key ID. Use a least-privilege IAM user (PutObject, GetObject, DeleteObject only). |
+| `PMS_S3_SECRET_KEY` | Required | — | S3 secret access key. |
+| `PMS_S3_ENDPOINT` | Optional | — | Override the S3 endpoint URL. Required for non-AWS providers (Cloudflare R2, Backblaze B2, MinIO, LocalStack). Leave unset for AWS S3. |
+| `PMS_S3_PRESIGNED_URL_EXPIRY_MINUTES` | Optional | `15` | Lifetime of pre-signed PUT URLs returned to clients for direct photo upload. |
+| `PMS_S3_MAX_UPLOAD_SIZE_BYTES` | Optional | `10485760` (10 MB) | Per-photo upload size cap, enforced server-side before the pre-signed URL is issued. |
+
+> **Note:** Phase 4 introduces S3 as required infrastructure for the photo flow. Switching to Cloudflare R2 or Backblaze B2 requires only setting `PMS_S3_ENDPOINT` plus the matching credentials — no code changes. Subscription plan limits are seeded by Flyway migration `V3.6` (Starter: 5 properties, Pro: 25, Agency: unlimited) and can be customised via direct SQL on the `subscription_plans` table.
 
 ---
 
@@ -270,7 +284,7 @@ Run this checklist after each deployment:
 | Phase 1 — Project Setup & Shared Kernel | Done | Core infrastructure variables: DB, Redis, Encryption, Mail, S3, async pool |
 | Phase 2 — Security & Auth Foundation | Done | JWT RSA keys, CORS origins, rate limit config, secret generation steps |
 | Phase 3 — Tenant & User Modules | Done | Two optional config vars (`PMS_INVITATION_EXPIRY_DAYS`, `PMS_PASSWORD_RESET_EXPIRY_HOURS`). No new infra/secrets required. Flyway migrations V2.0–V2.6 seed roles/permissions. |
-| Phase 4 — Property & Subscription Modules | Pending | _(update when complete — expect: S3 bucket usage confirmed)_ |
+| Phase 4 — Property & Subscription Modules | Done | S3 is now required (`PMS_S3_BUCKET_NAME`, `PMS_S3_REGION`, `PMS_S3_ACCESS_KEY`, `PMS_S3_SECRET_KEY`). New optional vars: `PMS_S3_PRESIGNED_URL_EXPIRY_MINUTES` (default 15), `PMS_S3_MAX_UPLOAD_SIZE_BYTES` (default 10 MB). `PMS_S3_ENDPOINT` enables Cloudflare R2 / Backblaze B2 / MinIO without code changes. Flyway V3.0–V3.7 add subscriptions, properties, photos, amenities, tags, groups, and seed plans. |
 | Phase 5 — Guest & Booking Modules | Pending | _(update when complete)_ |
 | Phase 6 — Payment & Channel Sync | Pending | _(update when complete — expect: Stripe keys, webhook signing secret)_ |
 | Phase 7 — Housekeeping & Maintenance | Pending | _(update when complete — expect: Dockerfile, Docker Compose)_ |

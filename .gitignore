@@ -47,3 +47,8 @@ build/
 # === Test ===
 *.exec
 jacoco.exec
+
+# === Temporary (not yet part of the backend deliverable) ===
+frontend/
+scripts/
+.claude/

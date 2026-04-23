@@ -87,7 +87,7 @@ public class TenantRegistrationService {
         user.setRoles(Set.of(agencyAdmin));
         user = userRepository.save(user);
 
-        // Create starter subscription (stub in Phase 3)
+        // Create starter subscription (free tier, auto-provisioned)
         subscriptionService.createStarterSubscription(tenant.getId());
 
         // Generate tokens

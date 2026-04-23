@@ -82,7 +82,7 @@ Each phase has a detailed implementation plan in docs/tasks/:
 - [x] Phase 1: Project Setup & Shared Kernel
 - [x] Phase 2: Security & Auth Foundation
 - [x] Phase 3: Tenant & User Modules
-- [ ] Phase 4: Property & Subscription Modules
+- [x] Phase 4: Property & Subscription Modules
 - [ ] Phase 5: Guest & Booking Modules
 - [ ] Phase 6: Payment & Channel Sync
 - [ ] Phase 7: Housekeeping & Maintenance
