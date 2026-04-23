@@ -6,6 +6,7 @@ services:
       POSTGRES_DB: ${PMS_DATASOURCE_DB:-pmsdb}
       POSTGRES_USER: ${PMS_DATASOURCE_USERNAME:-pms}
       POSTGRES_PASSWORD: ${PMS_DATASOURCE_PASSWORD:-pms}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     ports:
       - "${PMS_POSTGRES_PORT:-5432}:5432"
     volumes:

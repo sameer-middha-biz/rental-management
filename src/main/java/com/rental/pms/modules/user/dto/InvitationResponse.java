@@ -8,6 +8,7 @@ public record InvitationResponse(
         String email,
         String roleName,
         String status,
+        String token,
         Instant expiresAt,
         Instant createdAt
 ) {}

@@ -1,10 +1,14 @@
 package com.rental.pms.modules.user.repository;
 
 import com.rental.pms.modules.user.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,4 +30,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE u.tenantId = :tenantId AND r.name = :roleName")
     long countByTenantIdAndRoleName(@Param("tenantId") UUID tenantId, @Param("roleName") String roleName);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.tenantId = :tenantId")
+    List<User> findAllByTenantIdWithRoles(@Param("tenantId") UUID tenantId);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.id = :id AND u.tenantId = :tenantId")
+    Optional<User> findByIdWithRoles(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 }

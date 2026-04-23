@@ -68,59 +68,58 @@ public class TenantRegistrationService {
                 .build();
         tenant = tenantRepository.save(tenant);
 
-        // Set TenantContext for BaseEntity's TenantInterceptor
+        // Set TenantContext for BaseEntity's TenantInterceptor.
+        // Note: Do NOT clear in finally — @Transactional commits after method return,
+        // and Hibernate flush triggers @PrePersist/@PreUpdate which needs TenantContext.
         TenantContext.setTenantId(tenant.getId());
-        try {
-            // Create admin user
-            User user = User.builder()
-                    .email(request.email())
-                    .passwordHash(passwordEncoder.encode(request.password()))
-                    .firstName(request.firstName())
-                    .lastName(request.lastName())
-                    .status(UserStatus.ACTIVE)
-                    .build();
 
-            Role agencyAdmin = roleRepository.findByName("AGENCY_ADMIN")
-                    .orElseThrow(() -> new IllegalStateException("AGENCY_ADMIN role not found in database"));
-            user.setRoles(Set.of(agencyAdmin));
-            user = userRepository.save(user);
+        // Create admin user
+        User user = User.builder()
+                .email(request.email())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .status(UserStatus.ACTIVE)
+                .build();
 
-            // Create starter subscription (stub in Phase 3)
-            subscriptionService.createStarterSubscription(tenant.getId());
+        Role agencyAdmin = roleRepository.findByName("AGENCY_ADMIN")
+                .orElseThrow(() -> new IllegalStateException("AGENCY_ADMIN role not found in database"));
+        user.setRoles(Set.of(agencyAdmin));
+        user = userRepository.save(user);
 
-            // Generate tokens
-            List<String> roles = List.of("AGENCY_ADMIN");
-            List<String> permissions = agencyAdmin.getPermissions().stream()
-                    .map(p -> p.getCode())
-                    .toList();
-            String accessToken = jwtTokenProvider.generateAccessToken(
-                    user.getId(), tenant.getId(), roles, permissions);
-            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        // Create starter subscription (stub in Phase 3)
+        subscriptionService.createStarterSubscription(tenant.getId());
 
-            // Save refresh token
-            saveRefreshToken(user.getId(), refreshToken);
+        // Generate tokens
+        List<String> roles = List.of("AGENCY_ADMIN");
+        List<String> permissions = agencyAdmin.getPermissions().stream()
+                .map(p -> p.getCode())
+                .toList();
+        String accessToken = jwtTokenProvider.generateAccessToken(
+                user.getId(), tenant.getId(), roles, permissions);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
-            // Publish events
-            domainEventPublisher.publish(new TenantRegisteredEvent(
-                    DomainEvent.now(tenant.getId()),
-                    tenant.getId(), tenant.getName(), tenant.getSlug(), user.getId()));
-            domainEventPublisher.publish(new UserCreatedEvent(
-                    DomainEvent.now(tenant.getId()),
-                    tenant.getId(), user.getId(), user.getEmail(),
-                    UserCreatedEvent.SOURCE_REGISTRATION));
+        // Save refresh token
+        saveRefreshToken(user.getId(), refreshToken);
 
-            auditEventPublisher.publish(tenant.getId(), user.getId(),
-                    "TENANT_REGISTERED", "Tenant", tenant.getId(),
-                    "Tenant registered: " + tenant.getName());
+        // Publish events
+        domainEventPublisher.publish(new TenantRegisteredEvent(
+                DomainEvent.now(tenant.getId()),
+                tenant.getId(), tenant.getName(), tenant.getSlug(), user.getId()));
+        domainEventPublisher.publish(new UserCreatedEvent(
+                DomainEvent.now(tenant.getId()),
+                tenant.getId(), user.getId(), user.getEmail(),
+                UserCreatedEvent.SOURCE_REGISTRATION));
 
-            log.info("Tenant registered: name={}, slug={}, adminEmail={}",
-                    tenant.getName(), tenant.getSlug(), user.getEmail());
+        auditEventPublisher.publish(tenant.getId(), user.getId(),
+                "TENANT_REGISTERED", "Tenant", tenant.getId(),
+                "Tenant registered: " + tenant.getName());
 
-            return new AuthResponse(accessToken, refreshToken,
-                    jwtTokenProvider.getAccessTokenExpiry().getSeconds());
-        } finally {
-            TenantContext.clear();
-        }
+        log.info("Tenant registered: name={}, slug={}, adminEmail={}",
+                tenant.getName(), tenant.getSlug(), user.getEmail());
+
+        return new AuthResponse(accessToken, refreshToken,
+                jwtTokenProvider.getAccessTokenExpiry().getSeconds());
     }
 
     private String generateUniqueSlug(String name) {

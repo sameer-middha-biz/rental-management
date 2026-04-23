@@ -100,8 +100,8 @@ class UserServiceTest {
     void getUsers_ShouldReturnPaginatedResults() {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
-        Page<User> page = new PageImpl<>(List.of(testUser), pageable, 1);
-        when(userRepository.findAll(pageable)).thenReturn(page);
+        when(currentUser.getTenantId()).thenReturn(tenantId);
+        when(userRepository.findAllByTenantIdWithRoles(tenantId)).thenReturn(List.of(testUser));
         when(userMapper.toResponse(any(User.class))).thenReturn(userResponse);
 
         // Act
@@ -117,7 +117,8 @@ class UserServiceTest {
     void getUser_WhenFound_ShouldReturnUserResponse() {
         // Arrange
         UUID userId = testUser.getId();
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(currentUser.getTenantId()).thenReturn(tenantId);
+        when(userRepository.findByIdWithRoles(userId, tenantId)).thenReturn(Optional.of(testUser));
         when(userMapper.toResponse(testUser)).thenReturn(userResponse);
 
         // Act
@@ -132,7 +133,8 @@ class UserServiceTest {
     void getUser_WhenNotFound_ShouldThrowResourceNotFoundException() {
         // Arrange
         UUID unknownId = UUID.randomUUID();
-        when(userRepository.findById(unknownId)).thenReturn(Optional.empty());
+        when(currentUser.getTenantId()).thenReturn(tenantId);
+        when(userRepository.findByIdWithRoles(unknownId, tenantId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> userService.getUser(unknownId))

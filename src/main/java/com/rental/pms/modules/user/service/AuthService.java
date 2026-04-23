@@ -2,6 +2,7 @@ package com.rental.pms.modules.user.service;
 
 import com.rental.pms.common.audit.AuditEventPublisher;
 import com.rental.pms.common.security.JwtTokenProvider;
+import com.rental.pms.common.security.TenantContext;
 import com.rental.pms.modules.user.dto.AuthResponse;
 import com.rental.pms.modules.user.dto.LoginRequest;
 import com.rental.pms.modules.user.dto.RefreshTokenRequest;
@@ -55,6 +56,14 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+
+        // Set TenantContext — login is unauthenticated, so TenantFilter doesn't run,
+        // but the TenantInterceptor @PreUpdate requires it when saving the user entity.
+        // Note: Do NOT clear TenantContext in a finally block here — the @Transactional
+        // proxy commits after this method returns, and Hibernate flush triggers @PreUpdate
+        // which needs TenantContext to still be set. TenantFilter's finally block (or the
+        // absence of it on public endpoints) handles cleanup at the request level.
+        TenantContext.setTenantId(user.getTenantId());
 
         // Collect roles and permissions
         List<String> roles = user.getRoles().stream()

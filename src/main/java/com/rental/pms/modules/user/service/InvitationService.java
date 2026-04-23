@@ -124,49 +124,49 @@ public class InvitationService {
         if (userRepository.existsByEmailAndTenantId(invitation.getEmail(), tenantId)) {
             throw new ConflictException("Email already registered in this tenant", "USER.EMAIL.DUPLICATE");
         }
+        // Set TenantContext for BaseEntity's TenantInterceptor.
+        // Note: Do NOT clear in finally — @Transactional commits after method return,
+        // and Hibernate flush triggers @PrePersist/@PreUpdate which needs TenantContext.
         TenantContext.setTenantId(tenantId);
-        try {
-            Role role = roleRepository.findById(invitation.getRoleId())
-                    .orElseThrow(() -> new IllegalStateException("Role not found for invitation"));
 
-            User user = User.builder()
-                    .email(invitation.getEmail())
-                    .passwordHash(passwordEncoder.encode(request.password()))
-                    .firstName(request.firstName())
-                    .lastName(request.lastName())
-                    .status(UserStatus.ACTIVE)
-                    .roles(Set.of(role))
-                    .build();
-            user = userRepository.save(user);
+        Role role = roleRepository.findById(invitation.getRoleId())
+                .orElseThrow(() -> new IllegalStateException("Role not found for invitation"));
 
-            invitation.setStatus(InvitationStatus.ACCEPTED);
-            invitationRepository.save(invitation);
+        User user = User.builder()
+                .email(invitation.getEmail())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .status(UserStatus.ACTIVE)
+                .roles(Set.of(role))
+                .build();
+        user = userRepository.save(user);
 
-            // Generate tokens
-            List<String> roles = List.of(role.getName());
-            List<String> permissions = role.getPermissions().stream()
-                    .map(Permission::getCode)
-                    .toList();
-            String accessToken = jwtTokenProvider.generateAccessToken(
-                    user.getId(), tenantId, roles, permissions);
-            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        invitation.setStatus(InvitationStatus.ACCEPTED);
+        invitationRepository.save(invitation);
 
-            saveRefreshToken(user.getId(), refreshToken);
+        // Generate tokens
+        List<String> roles = List.of(role.getName());
+        List<String> permissions = role.getPermissions().stream()
+                .map(Permission::getCode)
+                .toList();
+        String accessToken = jwtTokenProvider.generateAccessToken(
+                user.getId(), tenantId, roles, permissions);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
-            domainEventPublisher.publish(new UserCreatedEvent(
-                    DomainEvent.now(tenantId),
-                    tenantId, user.getId(), user.getEmail(),
-                    UserCreatedEvent.SOURCE_INVITATION));
+        saveRefreshToken(user.getId(), refreshToken);
 
-            auditEventPublisher.publish(tenantId, user.getId(),
-                    "USER_CREATED_VIA_INVITATION", "User", user.getId(),
-                    "User created via invitation");
+        domainEventPublisher.publish(new UserCreatedEvent(
+                DomainEvent.now(tenantId),
+                tenantId, user.getId(), user.getEmail(),
+                UserCreatedEvent.SOURCE_INVITATION));
 
-            return new AuthResponse(accessToken, refreshToken,
-                    jwtTokenProvider.getAccessTokenExpiry().getSeconds());
-        } finally {
-            TenantContext.clear();
-        }
+        auditEventPublisher.publish(tenantId, user.getId(),
+                "USER_CREATED_VIA_INVITATION", "User", user.getId(),
+                "User created via invitation");
+
+        return new AuthResponse(accessToken, refreshToken,
+                jwtTokenProvider.getAccessTokenExpiry().getSeconds());
     }
 
     public PageResponse<InvitationResponse> getInvitations(Pageable pageable) {
@@ -201,6 +201,7 @@ public class InvitationService {
                 invitation.getEmail(),
                 roleName,
                 invitation.getStatus().name(),
+                invitation.getToken(),
                 invitation.getExpiresAt(),
                 invitation.getCreatedAt()
         );

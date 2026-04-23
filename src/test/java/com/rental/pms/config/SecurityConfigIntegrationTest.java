@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
 import java.util.List;
@@ -27,11 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Protected endpoints return 401 without token
  * - Protected endpoints pass security with valid token (no 401/403)
  * <p>
- * Uses @WebMvcTest to test only the web/security layer without requiring a database.
- * Note: Without actual controllers, public/authenticated endpoints may return 404 or 500
- * depending on the GlobalExceptionHandler. The key assertion is that security does NOT block them.
+ * Uses @WebMvcTest scoped to a local stub controller so real application controllers
+ * (and their service dependencies) are NOT loaded. The tests only exercise the filter
+ * chain — missing route mappings return 404, which is fine because assertions check
+ * "not 401/403", not specific success codes.
  */
-@WebMvcTest
+@WebMvcTest(controllers = SecurityConfigIntegrationTest.StubController.class)
 @Import({
         SecurityConfig.class,
         JwtAuthenticationFilter.class,
@@ -41,6 +43,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @ActiveProfiles("test")
 class SecurityConfigIntegrationTest {
+
+    @RestController
+    static class StubController {
+        // Intentionally empty — exists only to scope @WebMvcTest away from real controllers.
+    }
 
     @Autowired
     private MockMvc mockMvc;

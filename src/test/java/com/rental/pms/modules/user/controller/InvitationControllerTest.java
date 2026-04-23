@@ -69,6 +69,7 @@ class InvitationControllerTest {
                 "newuser@agency.com",
                 "PROPERTY_MANAGER",
                 "PENDING",
+                UUID.randomUUID().toString(),
                 Instant.now().plus(7, ChronoUnit.DAYS),
                 Instant.now()
         );

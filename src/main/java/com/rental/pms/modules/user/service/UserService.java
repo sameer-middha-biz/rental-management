@@ -23,10 +23,12 @@ import com.rental.pms.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,13 +46,23 @@ public class UserService {
     private final DomainEventPublisher domainEventPublisher;
 
     public PageResponse<UserResponse> getUsers(Pageable pageable) {
-        Page<UserResponse> page = userRepository.findAll(pageable)
-                .map(userMapper::toResponse);
+        UUID tenantId = currentUser.getTenantId();
+        List<User> users = userRepository.findAllByTenantIdWithRoles(tenantId);
+
+        // Manual pagination (JOIN FETCH + Page doesn't work well in Spring Data)
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), users.size());
+        List<User> pageContent = start < users.size() ? users.subList(start, end) : List.of();
+
+        Page<UserResponse> page = new PageImpl<>(
+                pageContent.stream().map(userMapper::toResponse).toList(),
+                pageable, users.size());
         return PageResponse.from(page);
     }
 
     public UserResponse getUser(UUID id) {
-        User user = userRepository.findById(id)
+        UUID tenantId = currentUser.getTenantId();
+        User user = userRepository.findByIdWithRoles(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
         return userMapper.toResponse(user);
     }
