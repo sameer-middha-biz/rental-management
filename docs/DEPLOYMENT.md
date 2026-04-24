@@ -1,7 +1,7 @@
 # Deployment Guide
 
 > **Living document** — updated after each implementation phase.
-> Last updated: Phase 4 (Property & Subscription Modules).
+> Last updated: Phase 5 (Guest & Booking Modules).
 
 This guide covers deploying the Holiday Rental Management Platform in two environments:
 - **Primary (MVP):** Coolify on Hostinger VPS (self-hosted)
@@ -285,7 +285,7 @@ Run this checklist after each deployment:
 | Phase 2 — Security & Auth Foundation | Done | JWT RSA keys, CORS origins, rate limit config, secret generation steps |
 | Phase 3 — Tenant & User Modules | Done | Two optional config vars (`PMS_INVITATION_EXPIRY_DAYS`, `PMS_PASSWORD_RESET_EXPIRY_HOURS`). No new infra/secrets required. Flyway migrations V2.0–V2.6 seed roles/permissions. |
 | Phase 4 — Property & Subscription Modules | Done | S3 is now required (`PMS_S3_BUCKET_NAME`, `PMS_S3_REGION`, `PMS_S3_ACCESS_KEY`, `PMS_S3_SECRET_KEY`). New optional vars: `PMS_S3_PRESIGNED_URL_EXPIRY_MINUTES` (default 15), `PMS_S3_MAX_UPLOAD_SIZE_BYTES` (default 10 MB). `PMS_S3_ENDPOINT` enables Cloudflare R2 / Backblaze B2 / MinIO without code changes. Flyway V3.0–V3.7 add subscriptions, properties, photos, amenities, tags, groups, and seed plans. |
-| Phase 5 — Guest & Booking Modules | Pending | _(update when complete)_ |
+| Phase 5 — Guest & Booking Modules | Done | No new required env vars. Flyway V4.0–V4.7 add guests (with encrypted PII via `EncryptedStringConverter`), property pricing columns, seasonal rates, pricing rules, coupons, bookings, booking nightly rates, and the availability partial index. Pricing engine, availability (pg_advisory_xact_lock) and booking-creation flow are transactional and atomic. GDPR erasure on guests deletes the ID-document S3 object best-effort and anonymises PII in place (uses the same `PMS_S3_*` vars introduced in Phase 4). |
 | Phase 6 — Payment & Channel Sync | Pending | _(update when complete — expect: Stripe keys, webhook signing secret)_ |
 | Phase 7 — Housekeeping & Maintenance | Pending | _(update when complete — expect: Dockerfile, Docker Compose)_ |
 | Phase 8 — Cross-Cutting Features | Pending | _(update when complete — expect: SMS provider keys, push notification config)_ |

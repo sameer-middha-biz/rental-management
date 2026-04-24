@@ -77,6 +77,14 @@ public class Property extends BaseEntity {
     @Column(name = "max_guests")
     private Integer maxGuests;
 
+    /** Base per-night rate in minor units (e.g. pence). Required for bookable properties. */
+    @Column(name = "base_price_per_night_minor_units")
+    private Long basePricePerNightMinorUnits;
+
+    /** ISO 4217 currency code. Defaults to tenant currency if absent. */
+    @Column(name = "currency", length = 3)
+    private String currency;
+
     @Column(name = "bedrooms")
     private Integer bedrooms;
 
