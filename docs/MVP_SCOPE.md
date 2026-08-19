@@ -66,13 +66,13 @@ The ability to create and manage a portfolio of rental properties is the foundat
 - Cancellation policy configuration per property (flexible, moderate, strict) with automatic refund calculation rules
 - Basic seasonal rate rules (peak, off-peak, shoulder) configurable per property or property group
 - Weekend vs. weekday rate differentiation
-- Length-of-stay discounts (weekly, monthly) configurable per property
+- Length-of-stay pricing: configurable discount tiers by minimum stay duration (e.g., 10% off for 7+ nights, 15% off for 14+ nights, 20% off for 28+ nights); discount thresholds and percentages fully configurable per property — longer stays get better rates
 - Per-guest surcharge beyond base occupancy (e.g., extra guest fee per night beyond 4 guests)
 - Cleaning fee configuration: flat fee per booking, configurable per property
 - Short-stay premium: ability to add a surcharge for stays below a configurable threshold (e.g., 1-2 night bookings)
 - Last-minute and early-bird discount rules (percentage or flat amount, configurable by lead time)
 - Promotional / coupon codes for direct bookings (percentage or flat discount)
-- Tax and levy configuration per property or region: support for multiple tax types (VAT, tourist tax, city occupancy tax) as line items on guest invoices
+- Tax and levy configuration per property or region: support for multiple tax types (VAT, tourist tax, city occupancy tax, state/regional tax, local levy) as configurable line items on guest invoices; each tax type has a name, rate (percentage or flat), and applicability scope (per booking, per night, or per guest)
 - Rate preview calculator: staff can preview the total price breakdown (nightly rate × nights + fees + taxes) before confirming a booking
 - Per-channel rate management: ability to set different base rates per OTA channel (e.g., direct bookings 10% cheaper to offset commission)
 - Third-party dynamic pricing integration support: API hooks for PriceLabs, Beyond Pricing, and Wheelhouse to push rates into the platform
@@ -127,6 +127,9 @@ This is one of the most critical MVP features. Hosts cannot manage a modern rent
 - Record and track payments against bookings (amount, method, date, status)
 - Support for multiple payment statuses: Pending, Received, Partial, Refunded
 - Integration with Stripe for online payment collection (card payments)
+- Split payment schedules: configurable deposit at time of booking (percentage or flat amount) with the remaining balance due on a configurable schedule (e.g., 30 days before arrival); applies to direct bookings and manual reservations
+- Automated payment reminder emails to the guest before each balance due date (configurable lead times, e.g., 14 days and 7 days before); reminder content includes the amount due, due date, and a payment link
+- Failed payment retry: if the scheduled balance charge fails, retry automatically up to 3 times over 72 hours; notify the guest by email to update their payment details after each failure
 - Automated generation of guest invoices/receipts as PDF
 - Security deposit management (charge, hold, release workflow)
 - Basic owner statement generation — monthly breakdown of income, platform fees, and management fees per property per owner
@@ -225,7 +228,7 @@ A lightweight, embeddable booking widget or simple hosted booking page is essent
 - Automated confirmation email on direct booking
 - **End-to-end direct booking payment flow:**
   - Guest selects dates → real-time price breakdown displayed (nightly rate × nights + cleaning fee + taxes) → guest enters details → pays via Stripe → instant booking confirmation email
-  - Support for split payments: deposit at booking (configurable percentage or flat amount), remaining balance auto-charged on a configurable schedule (e.g., 30 days before arrival)
+  - Support for split payments: deposit at booking (configurable percentage or flat amount), remaining balance auto-charged on a configurable schedule (e.g., 30 days before arrival); automated reminder emails sent to the guest before each due date (see §6 for full payment schedule and retry logic)
   - Stripe payment retry logic to prevent double-charging on transient failures
   - Security deposit pre-authorisation via Stripe at booking, auto-released after checkout if no claim
   - PCI compliance handled entirely via Stripe's hosted payment elements (no raw card data touches our servers)
@@ -283,7 +286,7 @@ New clients migrating from spreadsheets, another PMS, or manual processes need a
 
 **Core capabilities:**
 
-- Email notifications for: new booking, booking modification, cancellation, new guest message, cleaning task assigned, maintenance issue assigned
+- Email notifications for: new booking, booking modification, cancellation, new guest message, cleaning task assigned, maintenance issue assigned, upcoming balance payment due (guest), payment received, payment failure (guest + property manager)
 - In-app notification centre for key events
 - Configurable notification preferences per user role
 - SMS notifications for critical alerts (optional, configurable): double-booking detection, payment failure, urgent maintenance issue
